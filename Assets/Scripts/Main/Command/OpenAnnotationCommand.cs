@@ -8,15 +8,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using QFramework;
+using SFB;
 using UnityEngine;
 
 namespace GJFramework
 {
     public class OpenAnnotationCommand : AbstractCommand
     {
+        ExtensionFilter[] extensions = new [] {
+            new ExtensionFilter("文本文件", "txt" ),
+        };
+        
         protected override void OnExecute()
         {
-            throw new System.NotImplementedException();
+            var model = this.GetModel<IDepthLabelModel>();
+            string[] paths = StandaloneFileBrowser.OpenFilePanel("打开标注文件", model.AnnoPath.Value, extensions, false);
+            if (paths.Length > 0)
+            {
+                model.AnnoPath.Value = paths[0];
+            }
         }
     }
 }

@@ -5,6 +5,8 @@
   日期：DateTime
   功能：
 *****************************************************/
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using QFramework;

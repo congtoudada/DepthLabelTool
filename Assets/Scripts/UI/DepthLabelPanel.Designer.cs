@@ -3,15 +3,17 @@ using UnityEngine;
 using UnityEngine.UI;
 using QFramework;
 
-namespace QFramework.Example
+namespace GJFramework
 {
-	// Generate Id:9fddb6ed-ec96-4a98-a007-6d08fadff41d
+	// Generate Id:b4e5eb90-3366-4fe1-8221-d090664dcb07
 	public partial class DepthLabelPanel
 	{
 		public const string Name = "DepthLabelPanel";
 		
 		[SerializeField]
 		public UnityEngine.UI.Image MainImg;
+		[SerializeField]
+		public TMPro.TextMeshProUGUI DirtyTip;
 		[SerializeField]
 		public UnityEngine.UI.Button DirBtn;
 		[SerializeField]
@@ -25,7 +27,7 @@ namespace QFramework.Example
 		[SerializeField]
 		public TMPro.TextMeshProUGUI SaveDirText;
 		[SerializeField]
-		public UnityEngine.UI.Image TypeDropdown;
+		public TMPro.TMP_Dropdown TypeDropdown;
 		[SerializeField]
 		public UnityEngine.UI.ScrollRect LabelScrollView;
 		[SerializeField]
@@ -40,6 +42,7 @@ namespace QFramework.Example
 		protected override void ClearUIComponents()
 		{
 			MainImg = null;
+			DirtyTip = null;
 			DirBtn = null;
 			DirText = null;
 			AnnoBtn = null;

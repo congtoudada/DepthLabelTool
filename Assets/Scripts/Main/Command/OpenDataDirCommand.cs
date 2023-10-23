@@ -7,7 +7,9 @@
 *****************************************************/
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using QFramework;
+using SFB;
 using UnityEngine;
 
 namespace GJFramework
@@ -16,7 +18,12 @@ namespace GJFramework
     {
         protected override void OnExecute()
         {
-            throw new System.NotImplementedException();
+            var model = this.GetModel<IDepthLabelModel>();
+            var paths = StandaloneFileBrowser.OpenFolderPanel("选择图片目录", model.DataDir.Value, false);
+            if (paths.Length > 0)
+            {
+                model.DataDir.Value = paths[0];
+            }
         }
     }
 }
