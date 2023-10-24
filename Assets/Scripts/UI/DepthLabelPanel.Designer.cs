@@ -5,7 +5,7 @@ using QFramework;
 
 namespace GJFramework
 {
-	// Generate Id:89c51fbb-5589-4213-b9c2-71a9fbda9820
+	// Generate Id:1c5135b0-c600-4eee-af5c-050b80f3a0e1
 	public partial class DepthLabelPanel
 	{
 		public const string Name = "DepthLabelPanel";
@@ -13,13 +13,17 @@ namespace GJFramework
 		[SerializeField]
 		public TMPro.TextMeshProUGUI DirtyTip;
 		[SerializeField]
-		public UnityEngine.UI.Button DirBtn;
+		public UnityEngine.UI.Button LockBtn;
 		[SerializeField]
-		public TMPro.TextMeshProUGUI DirText;
+		public TMPro.TextMeshProUGUI LockText;
 		[SerializeField]
 		public UnityEngine.UI.Button AnnoBtn;
 		[SerializeField]
 		public TMPro.TextMeshProUGUI AnnoText;
+		[SerializeField]
+		public UnityEngine.UI.Button DirBtn;
+		[SerializeField]
+		public TMPro.TextMeshProUGUI DirText;
 		[SerializeField]
 		public UnityEngine.UI.Button SaveDirBtn;
 		[SerializeField]
@@ -35,21 +39,25 @@ namespace GJFramework
 		[SerializeField]
 		public UnityEngine.UI.Button NextBtn;
 		[SerializeField]
-		public RectTransform Results;
+		public UnityEngine.UI.Button ExitButton;
 		[SerializeField]
 		public UnityEngine.UI.Image GrayBG;
 		[SerializeField]
 		public UnityEngine.UI.Image MainImg;
+		[SerializeField]
+		public RectTransform Results;
 		
 		private DepthLabelPanelData mPrivateData = null;
 		
 		protected override void ClearUIComponents()
 		{
 			DirtyTip = null;
-			DirBtn = null;
-			DirText = null;
+			LockBtn = null;
+			LockText = null;
 			AnnoBtn = null;
 			AnnoText = null;
+			DirBtn = null;
+			DirText = null;
 			SaveDirBtn = null;
 			SaveDirText = null;
 			TypeDropdown = null;
@@ -57,9 +65,10 @@ namespace GJFramework
 			InfoScrollView = null;
 			BackBtn = null;
 			NextBtn = null;
-			Results = null;
+			ExitButton = null;
 			GrayBG = null;
 			MainImg = null;
+			Results = null;
 			
 			mData = null;
 		}

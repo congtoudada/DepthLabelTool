@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using B83.Image.BMP;
 using DG.Tweening;
 using GJFramework;
@@ -21,7 +22,9 @@ namespace GJFramework
 		All,
 		OpenDir,
 		OpenAnnotation,
-		SaveDir
+		SaveDir,
+		Start,
+		Clear
 	}
 
 	public partial class DepthLabelPanel : UIPanel, IController
@@ -33,7 +36,9 @@ namespace GJFramework
 		public int CurrentTypeIdx => currentTypeIdx;
 		private int currentTypeIdx = 0;
 		private int currentBMPIdx = 0;
-		private List<string> _infoList = new List<string>();
+		private List<string> _typeInfoList = new List<string>();
+		private List<string> _typeFloatInfoList = new List<string>();
+		private const string pattern = @"\d+(\.\d+)?";  
 		public string DefaultTip => _defaultTip;
 		private string _defaultTip = "";
 		private IActionController _tipController;
@@ -46,6 +51,7 @@ namespace GJFramework
 		private Dictionary<int, Color> _labelColorDict = new Dictionary<int, Color>();
 		private LabelResultJson _labelResultJson = new LabelResultJson();
 		private SimpleObjectPool<LabelResultJsonItem> _jsonPool;
+		private bool isLock = true; //初始化会设为false
 
 		protected override void OnInit(IUIData uiData = null)
 		{
@@ -61,6 +67,7 @@ namespace GJFramework
 			DragFeatureComp = UIKit.Root.PopUI.GetComponent<DragFeature>();
 			
 			#region 事件监听
+			LockBtn.onClick.AddListener(SwitchLock);
 			// 打开数据目录
 			DirBtn.onClick.AddListener(() =>
 			{
@@ -117,42 +124,55 @@ namespace GJFramework
 			};
 			ActionKit.OnUpdate.Register(() =>
 			{
-				if (Input.GetKeyDown(KeyCode.W))
+				if (isLock && Input.GetKeyDown(KeyCode.W))
 				{
 					this.SendCommand(new LabelActionCommand(this));
 				}
 			});
+			
+			//退出
+			ExitButton.onClick.AddListener(Application.Quit);
 			#endregion
 			
-			UpdateView(DepthLabelPanelViewEnum.All);
+			UpdateView(DepthLabelPanelViewEnum.Start);
 		}
-
-		// private void LoadLabelResult(string filename)
-		// {
-		// 	
-		// }
+		
 
 		private void UpdateView(DepthLabelPanelViewEnum viewEnum)
 		{
 			switch (viewEnum)
 			{
 				case DepthLabelPanelViewEnum.All:
-					UpdateView(DepthLabelPanelViewEnum.OpenDir);
-					UpdateView(DepthLabelPanelViewEnum.OpenAnnotation);
 					UpdateView(DepthLabelPanelViewEnum.SaveDir);
-					break;
-				case DepthLabelPanelViewEnum.OpenDir:
-					DirText.text = mModel.DataDir.Value;
+					UpdateView(DepthLabelPanelViewEnum.OpenAnnotation);
+					//更新TypeDropDown
+					UpdateView_TypeDropDown();
+					UpdateView(DepthLabelPanelViewEnum.OpenDir);
 					//更新InfoScrollView
 					StartCoroutine(UpdateView_InfoScrollView());
 					break;
+				case DepthLabelPanelViewEnum.OpenDir:
+					DirText.text = mModel.DataDir.Value;
+					break;
 				case DepthLabelPanelViewEnum.OpenAnnotation:
 					AnnoText.text = mModel.AnnoPath.Value;
-					//更新TypeDropDown
-					UpdateView_TypeDropDown();
 					break;
 				case DepthLabelPanelViewEnum.SaveDir:
 					SaveDirText.text = mModel.SaveDir.Value;
+					break;
+				case DepthLabelPanelViewEnum.Start:
+					UpdateView(DepthLabelPanelViewEnum.SaveDir);
+					UpdateView(DepthLabelPanelViewEnum.OpenAnnotation);
+					UpdateView(DepthLabelPanelViewEnum.OpenDir);
+					SwitchLock();
+					// 1920x1080就全屏显示
+					if (Screen.width != 1920 || Screen.height != 1080)
+					{
+						Screen.SetResolution(1920, 1080, FullScreenMode.Windowed);
+					}
+					break;
+				case DepthLabelPanelViewEnum.Clear:
+					ClearView();
 					break;
 			}
 		}
@@ -176,7 +196,7 @@ namespace GJFramework
 			if (dataDir.IsNotNullAndEmpty())
 			{
 				//添加新节点
-				string[] files = Directory.GetFiles(dataDir, "*left_ccd*", SearchOption.TopDirectoryOnly);
+				string[] files = Directory.GetFiles(dataDir, "*left_ccd*.bmp", SearchOption.TopDirectoryOnly);
 				int fileIdx = 0;
 				foreach (string file in files)
 				{
@@ -238,24 +258,34 @@ namespace GJFramework
 				string save_jsonName = old_filename.GetFileNameWithoutExtend() + ".json";
 				string save_jsonPath = Path.Combine(mModel.SaveDir.Value, save_jsonName);
 
-				_labelResultJson.resultList.Clear();
+				_labelResultJson.Init(old_filename, mModel.AnnoPath.Value.GetFileName(), this._typeFloatInfoList);
 				LabelResult[] labelResults = _labelContent.GetComponentsInChildren<LabelResult>();
 				foreach (LabelResult result in labelResults)
 				{
 					LabelResultJsonItem jsonItem = _jsonPool.Allocate();
-					jsonItem.Init(old_filename, mModel.AnnoPath.Value.GetFileName(), 
-						result.typeIndex, (int) result.left_up[0], (int) result.left_up[1], 
+					jsonItem.Init(result.typeIndex, (int) result.left_up[0], (int) result.left_up[1], 
 						(int) result.right_bottom[0], (int) result.right_bottom[1]);
 					_labelResultJson.resultList.Add(jsonItem);
 				}
 				
-				//写入本地
-				string jsonString = JsonUtility.ToJson(_labelResultJson, true);
-				using (StreamWriter sw = new StreamWriter(save_jsonPath))  
-				{  
-					sw.Write(jsonString);  
+				//根据是否变化判断写入本地
+				LabelResultJson localJsonObj = null;
+				if (File.Exists(save_jsonPath))
+				{
+					localJsonObj = JsonUtility.FromJson<LabelResultJson>(File.ReadAllText(save_jsonPath));
 				}
-				
+
+				if (localJsonObj == null || !localJsonObj.Equals(_labelResultJson))
+				{
+					string jsonString = JsonUtility.ToJson(_labelResultJson, true);
+					using (StreamWriter sw = new StreamWriter(save_jsonPath))  
+					{  
+						sw.Write(jsonString);
+					}
+					//导出png
+					this.SendCommand(new ExportDepthPNGCommand(this, _labelResultJson));
+				}
+
 				//回收
 				foreach (var jsonItem in _labelResultJson.resultList)
 				{
@@ -294,7 +324,8 @@ namespace GJFramework
 		{
 			// 类型选择
 			TypeDropdown.options.Clear();
-			_infoList.Clear();
+			_typeInfoList.Clear();
+			_typeFloatInfoList.Clear();
 			// TypeDropdown.options.Add(new TMP_Dropdown.OptionData("空类别"));
 			if (mModel.AnnoPath.Value.IsNotNullAndEmpty())
 			{
@@ -304,8 +335,17 @@ namespace GJFramework
 				while (line != null)
 				{
 					TypeDropdown.options.Add(new TMP_Dropdown.OptionData(line));
-					_infoList.Add(line);
+					_typeInfoList.Add(line);
 					line = sr.ReadLine();
+				}
+				for (int i = 0; i < _typeInfoList.Count; i++)
+				{
+					Match match = Regex.Match(_typeInfoList[i], pattern);  
+          
+					if (match.Success)  
+					{  
+						_typeFloatInfoList.Add(match.Value);
+					}  
 				}
 
 				if (TypeDropdown.options.Count > 0)
@@ -316,6 +356,65 @@ namespace GJFramework
 					{
 						_labelColorDict.Add(i, new Color(Random.value, Random.value, Random.value, 186.0f / 255.0f));
 					}
+					
+					currentTypeIdx = 0;
+					TypeDropdown.value = 0;
+					TypeDropdown.RefreshShownValue();
+				}
+			}
+		}
+
+		public void SwitchLock()
+		{
+			if (isLock)
+			{
+				// 锁定 -> 解锁
+				isLock = false;
+				LockText.text = "锁定路径";
+				DirBtn.interactable = true;
+				AnnoBtn.interactable = true;
+				SaveDirBtn.interactable = true;
+				BackBtn.interactable = false;
+				NextBtn.interactable = false;
+				//清屏
+				UpdateView(DepthLabelPanelViewEnum.Clear);
+			}
+			else
+			{
+				// 解锁 -> 锁定
+				isLock = true;
+				LockText.text = "解锁路径";
+				DirBtn.interactable = false;
+				AnnoBtn.interactable = false;
+				SaveDirBtn.interactable = false;
+				BackBtn.interactable = true;
+				NextBtn.interactable = true;
+				//更新屏幕信息
+				UpdateView(DepthLabelPanelViewEnum.All);
+			}
+		}
+
+		private void ClearView()
+		{
+			TypeDropdown.options.Clear();
+			TypeDropdown.RefreshShownValue();
+			if (_infoContent.childCount > 0)
+			{
+				Transform[] children = _infoContent.GetComponentsInChildren<Transform>();
+				foreach (Transform child in children)  
+				{  
+					if (child != _infoContent)
+						Destroy(child.gameObject);
+				}  
+			}
+
+			if (_labelContent.childCount > 0)
+			{
+				LabelResult[] children = _labelContent.GetComponentsInChildren<LabelResult>();
+				foreach (LabelResult child in children)  
+				{
+					child.OnRelease();
+					Destroy(child.gameObject);
 				}
 			}
 		}
