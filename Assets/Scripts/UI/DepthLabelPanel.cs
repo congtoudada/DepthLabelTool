@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using B83.Image.BMP;
+using DG.Tweening;
 using GJFramework;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,26 +26,41 @@ namespace GJFramework
 
 	public partial class DepthLabelPanel : UIPanel, IController
 	{
+		public DragFeature DragFeatureComp;
 		// Model
 		private IDepthLabelModel mModel;
+		// Other
+		public int CurrentTypeIdx => currentTypeIdx;
 		private int currentTypeIdx = 0;
 		private int currentBMPIdx = 0;
 		private List<string> _infoList = new List<string>();
+		public string DefaultTip => _defaultTip;
 		private string _defaultTip = "";
 		private IActionController _tipController;
+		public ResLoader ResLoader => mResLoader;
 		private ResLoader mResLoader = ResLoader.Allocate();
 		private Transform _infoContent;
+		public Transform LabelContent => _labelContent;
+		private Transform _labelContent;
 		private Color infoColor = new Color(234 / 55.0f, 138 / 255.0f, 138 / 255.0f, 255 / 255.0f);
-		
+		private Dictionary<int, Color> _labelColorDict = new Dictionary<int, Color>();
+		private LabelResultJson _labelResultJson = new LabelResultJson();
+		private SimpleObjectPool<LabelResultJsonItem> _jsonPool;
+
 		protected override void OnInit(IUIData uiData = null)
 		{
 			mData = uiData as DepthLabelPanelData ?? new DepthLabelPanelData();
 			// please add init code here
 			ResKit.Init();
+			Random.InitState(201500401);
+			_jsonPool = new SimpleObjectPool<LabelResultJsonItem>(() => new LabelResultJsonItem(), null, 5);
 			mModel = this.GetModel<IDepthLabelModel>();
 			_defaultTip = DirtyTip.text;
 			_infoContent = InfoScrollView.content;
+			_labelContent = LabelScrollView.content;
+			DragFeatureComp = UIKit.Root.PopUI.GetComponent<DragFeature>();
 			
+			#region 事件监听
 			// 打开数据目录
 			DirBtn.onClick.AddListener(() =>
 			{
@@ -77,7 +93,7 @@ namespace GJFramework
 			{
 				if (currentBMPIdx-1 >= 0)
 				{
-					SwitchInfoItem(currentBMPIdx-1);
+					SwitchInfoItem(currentBMPIdx, currentBMPIdx-1);
 				}
 			});
 			
@@ -86,12 +102,35 @@ namespace GJFramework
 			{
 				if (currentBMPIdx+1 < _infoContent.childCount)
 				{
-					SwitchInfoItem(currentBMPIdx+1);
+					SwitchInfoItem(currentBMPIdx, currentBMPIdx+1);
 				}
 			});
 			
+			
+			//标注开关
+			DragFeatureComp.OnDragOverEvent += (lt, rb) =>
+			{
+				string typeInfo = TypeDropdown.options[currentTypeIdx].text; //当前类型信息
+				Color labelColor = Color.black;
+				_labelColorDict.TryGetValue(currentTypeIdx, out labelColor);
+				this.SendCommand(new AddLabelItemCommand(this, currentTypeIdx, typeInfo, lt, rb, labelColor));
+			};
+			ActionKit.OnUpdate.Register(() =>
+			{
+				if (Input.GetKeyDown(KeyCode.W))
+				{
+					this.SendCommand(new LabelActionCommand(this));
+				}
+			});
+			#endregion
+			
 			UpdateView(DepthLabelPanelViewEnum.All);
 		}
+
+		// private void LoadLabelResult(string filename)
+		// {
+		// 	
+		// }
 
 		private void UpdateView(DepthLabelPanelViewEnum viewEnum)
 		{
@@ -147,42 +186,109 @@ namespace GJFramework
 					obj.GetComponentInChildren<TMP_Text>().text = file.GetFileName();
 					obj.GetComponent<Button>().onClick.AddListener(() =>
 					{
-						SwitchInfoItem(obj.name);
+						SwitchInfoItem(_infoContent.GetChild(currentBMPIdx).name, obj.name);
 					});
 					fileIdx++;
 				}
 				
+				// 文件数大于0
 				if (_infoContent.childCount > 0)
 				{
 					currentBMPIdx = 0;
-					SwitchInfoItem(currentBMPIdx);
+					SwitchInfoItem(currentBMPIdx, currentBMPIdx);
 				}
 			}
 		}
 		
 		//更换Info
-		private void SwitchInfoItem(string name)
+		private void SwitchInfoItem(string old_name, string name)
 		{
 			//还原旧数据
 			_infoContent.GetChild(currentBMPIdx).GetComponent<Image>().color = Color.white;
 						
 			//设置新数据
 			string[] data = name.Split('@');
-			Debug.Log("data: " + data[0] + "@" + data[1]);
+			//0是序号 1是文件名
+			// Debug.Log("data: " + data[0] + "@" + data[1]);
 			currentBMPIdx = data[0].ToInt();
 			_infoContent.GetChild(currentBMPIdx).GetComponent<Image>().color = infoColor;
 			//显示BMP
 			string path = Path.Combine(mModel.DataDir.Value, data[1]);
 			Texture2D texture2D = BMPLoader.LoadTexture(path);
 			MainImg.sprite = Sprite.Create(texture2D, new Rect(0, 0, texture2D.width, texture2D.height), Vector2.one * 0.5f);
+			
+			//更新LabelResult
+			StartCoroutine(UpdateLabelResult(old_name.Split('@')[1], data[1]));
 		}
 
-		private void SwitchInfoItem(int idx)
+		private void SwitchInfoItem(int oldIdx, int idx)
 		{
 			// Debug.Log(_infoContent.GetChild(idx).name);
-			SwitchInfoItem(_infoContent.GetChild(idx).name);
+			SwitchInfoItem(_infoContent.GetChild(oldIdx).name ,_infoContent.GetChild(idx).name);
 		}
 		
+		// 更新结果列表
+		//  old_filename: 切换前图片文件名
+		//	filename: 图片文件名
+		private IEnumerator UpdateLabelResult(string old_filename, string filename)
+		{
+			if (_labelContent.childCount > 0)
+			{
+				//存储
+				string save_jsonName = old_filename.GetFileNameWithoutExtend() + ".json";
+				string save_jsonPath = Path.Combine(mModel.SaveDir.Value, save_jsonName);
+
+				_labelResultJson.resultList.Clear();
+				LabelResult[] labelResults = _labelContent.GetComponentsInChildren<LabelResult>();
+				foreach (LabelResult result in labelResults)
+				{
+					LabelResultJsonItem jsonItem = _jsonPool.Allocate();
+					jsonItem.Init(old_filename, mModel.AnnoPath.Value.GetFileName(), 
+						result.typeIndex, (int) result.left_up[0], (int) result.left_up[1], 
+						(int) result.right_bottom[0], (int) result.right_bottom[1]);
+					_labelResultJson.resultList.Add(jsonItem);
+				}
+				
+				//写入本地
+				string jsonString = JsonUtility.ToJson(_labelResultJson, true);
+				using (StreamWriter sw = new StreamWriter(save_jsonPath))  
+				{  
+					sw.Write(jsonString);  
+				}
+				
+				//回收
+				foreach (var jsonItem in _labelResultJson.resultList)
+				{
+					_jsonPool.Recycle(jsonItem);
+				}
+				_labelResultJson.resultList.Clear();
+
+				//删除旧节点
+				LabelResult[] children = _labelContent.GetComponentsInChildren<LabelResult>();
+				foreach (LabelResult child in children)  
+				{
+					child.OnRelease();
+					Destroy(child.gameObject);
+				}
+				yield return null;
+			}
+			//尝试载入本地Annotation
+			string loadJsonName = filename.GetFileNameWithoutExtend() + ".json";
+			string loadJsonPath = Path.Combine(mModel.SaveDir.Value, loadJsonName);
+			if (File.Exists(loadJsonPath))
+			{
+				_labelResultJson = JsonUtility.FromJson<LabelResultJson>(File.ReadAllText(loadJsonPath));
+				foreach (var item in _labelResultJson.resultList)
+				{
+					Color labelColor = Color.black;
+					_labelColorDict.TryGetValue(item.typeIdx, out labelColor);
+					this.SendCommand(new AddLabelItemCommand(this, item.typeIdx, TypeDropdown.options[item.typeIdx].text,
+						new Vector2(item.lt_x, item.lt_y), new Vector2(item.rb_x, item.rb_y),
+						labelColor));
+				}
+			}
+		}
+
 		//更新TypeDropDown
 		private void UpdateView_TypeDropDown()
 		{
@@ -201,10 +307,20 @@ namespace GJFramework
 					_infoList.Add(line);
 					line = sr.ReadLine();
 				}
+
+				if (TypeDropdown.options.Count > 0)
+				{
+					_labelColorDict.Clear();
+					TypeDropdown.value = 0;
+					for (int i = 0; i < TypeDropdown.options.Count; i++)
+					{
+						_labelColorDict.Add(i, new Color(Random.value, Random.value, Random.value, 186.0f / 255.0f));
+					}
+				}
 			}
 		}
 
-		private void SetTip(string info, float duration)
+		public void SetTip(string info, float duration)
 		{
 			if (_tipController != null)
 			{
@@ -218,9 +334,9 @@ namespace GJFramework
 				.Callback(() => DirtyTip.text = _defaultTip).Start(this);
 		}
 
-		private void SetTip(string info)
+		public void SetTip(string info)
 		{
-			DirtyTip.text = info;
+			DirtyTip.DOText(info, 1.0f);
 		}
 		
 		protected override void OnOpen(IUIData uiData = null)
@@ -237,6 +353,14 @@ namespace GJFramework
 		
 		protected override void OnClose()
 		{
+
+		}
+
+		private new void OnDestroy()
+		{
+			base.OnDestroy();
+			mResLoader.Recycle2Cache();
+			mResLoader = null;
 		}
 
 		public IArchitecture GetArchitecture()

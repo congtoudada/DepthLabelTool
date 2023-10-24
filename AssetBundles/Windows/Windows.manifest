@@ -1,0 +1,35 @@
+ManifestFileVersion: 0
+CRC: 2325088717
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: assetobj_prefab
+      Dependencies: {}
+    Info_1:
+      Name: spriteatlas_spriteatlas
+      Dependencies: {}
+    Info_2:
+      Name: assetobj 3_prefab
+      Dependencies: {}
+    Info_3:
+      Name: assetobj 2_prefab
+      Dependencies: {}
+    Info_4:
+      Name: textureexample1_png
+      Dependencies: {}
+    Info_5:
+      Name: sceneres_unity
+      Dependencies: {}
+    Info_6:
+      Name: squarea_prefab
+      Dependencies: {}
+    Info_7:
+      Name: assetobj 1_prefab
+      Dependencies: {}
+    Info_8:
+      Name: infoitembtn_prefab
+      Dependencies: {}
+    Info_9:
+      Name: depthlabelpanel_prefab
+      Dependencies:
+        Dependency_0: infoitembtn_prefab

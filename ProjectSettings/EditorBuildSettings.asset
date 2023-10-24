@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/DepthLabelScene.unity
-    guid: 7298e0f259f904a448e7aa9869ccd775
+    path: Assets/Scenes/TestUIPanels/TestLabelPanel.unity
+    guid: d9ee94fd1b848bd4bb9faaf8cc2c2d1e
   m_configObjects: {}
