@@ -165,11 +165,11 @@ namespace GJFramework
 					UpdateView(DepthLabelPanelViewEnum.OpenAnnotation);
 					UpdateView(DepthLabelPanelViewEnum.OpenDir);
 					SwitchLock();
-					// 1920x1080就全屏显示
-					if (Screen.width != 1920 || Screen.height != 1080)
-					{
-						Screen.SetResolution(1920, 1080, FullScreenMode.Windowed);
-					}
+					// 1920x1080就全屏显示 （未适配分辨率的版本）
+					// if (Screen.width != 1920 || Screen.height != 1080)
+					// {
+					// 	Screen.SetResolution(1920, 1080, FullScreenMode.Windowed);
+					// }
 					break;
 				case DepthLabelPanelViewEnum.Clear:
 					ClearView();
@@ -202,6 +202,7 @@ namespace GJFramework
 				{
 					// 处理每个文件
 					var obj = Instantiate(mResLoader.LoadSync<GameObject>("InfoItemBtn"), _infoContent, true);
+					obj.transform.localScale = Vector3.one;
 					obj.name = fileIdx + "@" + file.GetFileName();
 					obj.GetComponentInChildren<TMP_Text>().text = file.GetFileName();
 					obj.GetComponent<Button>().onClick.AddListener(() =>

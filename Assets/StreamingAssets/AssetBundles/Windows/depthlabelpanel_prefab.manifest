@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 3597463591
+CRC: 497104294
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: f09127d9aad967f2a2ebef6a2a8e0a2f
+    Hash: 7b11de2bf937721a03f0da2c73ff4eb2
   TypeTreeHash:
     serializedVersion: 2
     Hash: cf88546935ef3a74cd2e9b95f615f449
@@ -121,5 +121,6 @@ SerializeReferenceClassIdentifiers:
 Assets:
 - Assets/Art/UIPrefab/DepthLabelPanel.prefab
 Dependencies:
+- E:/Practice/Unity/Demo/DUT/DepthLabelTool/AssetBundles/Windows/infoitembtn_prefab
 - E:/Practice/Unity/Demo/DUT/DepthLabelTool/AssetBundles/Windows/labelitem_prefab
 - E:/Practice/Unity/Demo/DUT/DepthLabelTool/AssetBundles/Windows/showresultitem_prefab

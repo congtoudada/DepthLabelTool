@@ -1,5 +1,5 @@
 ManifestFileVersion: 0
-CRC: 2419238811
+CRC: 2427532030
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
@@ -35,8 +35,9 @@ AssetBundleManifest:
     Info_10:
       Name: depthlabelpanel_prefab
       Dependencies:
-        Dependency_0: labelitem_prefab
-        Dependency_1: showresultitem_prefab
+        Dependency_0: infoitembtn_prefab
+        Dependency_1: labelitem_prefab
+        Dependency_2: showresultitem_prefab
     Info_11:
       Name: showresultitem_prefab
       Dependencies: {}

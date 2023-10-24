@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2159452478767149390}
   - component: {fileID: 2159452478767149391}
   - component: {fileID: 5646325002768749488}
+  - component: {fileID: 3024907275692415953}
   m_Layer: 0
   m_Name: LabelItem
   m_TagString: Untagged
@@ -35,10 +36,10 @@ RectTransform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -960, y: 0}
+  m_SizeDelta: {x: -1920, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2159452478767149391
 MonoBehaviour:
@@ -81,9 +82,30 @@ MonoBehaviour:
   DelBtn: {fileID: 2159452479090228711}
   HighlightBtn: {fileID: 7089771606141656388}
   highlightText: {fileID: 8314504455155563368}
+  typeIndex: 0
   typeInfo: 
   left_up: {x: 0, y: 0}
   right_bottom: {x: 0, y: 0}
+--- !u!114 &3024907275692415953
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2159452478767149377}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IgnoreLayout: 0
+  m_MinWidth: -1
+  m_MinHeight: -1
+  m_PreferredWidth: -1
+  m_PreferredHeight: 50
+  m_FlexibleWidth: 1
+  m_FlexibleHeight: -1
+  m_LayoutPriority: 1
 --- !u!1 &2159452479090228632
 GameObject:
   m_ObjectHideFlags: 0

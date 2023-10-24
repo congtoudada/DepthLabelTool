@@ -25,6 +25,7 @@ namespace GJFramework
         {
             var obj = GameObject.Instantiate(_controller.ResLoader.LoadSync<GameObject>("LabelItem"),
                 _controller.LabelContent, true);
+            obj.transform.localScale = Vector3.one;
             var showItem = GameObject.Instantiate(_controller.ResLoader.LoadSync<GameObject>("ShowResultItem"),
                 _controller.Results, true);
             obj.GetOrAddComponent<LabelResult>().init(this.typeIdx,this.typeInfo, lt, rb, showItem.GetComponent<ShowResultItem>(), labelColor);

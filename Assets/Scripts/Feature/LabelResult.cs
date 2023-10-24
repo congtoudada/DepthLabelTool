@@ -30,7 +30,7 @@ namespace GJFramework
         public Vector2 right_bottom;
         
         private ShowResultItem showItem;
-
+        
         private void Start()
         {
             DelBtn.onClick.AddListener(() =>
