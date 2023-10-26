@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 281434707
+CRC: 1344654791
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 0738087f535177c0d980cda59e1f1342
+    Hash: 3da48aeb5032848291209fbfc87c24c7
   TypeTreeHash:
     serializedVersion: 2
-    Hash: cf88546935ef3a74cd2e9b95f615f449
+    Hash: e6943039da11d5b86b51869f24ba3529
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -36,7 +36,15 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 11500000, guid: 31a19414c41e5ae4aae2af33fee712f6, type: 3}
 - Class: 114
+  Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: d4bc2a63ff16d78479ca58f327647512, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 879dc0754fa59584798202ee1d94643d, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 8a8695521f0d02e499659fee002a26c2, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 2da0c512f12947e489f739169773d7ca, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 9085046f02f69544eb97fd06b6048fe2, type: 3}
 - Class: 114
@@ -87,6 +95,16 @@ SerializeReferenceClassIdentifiers:
 - AssemblyName: Unity.TextMeshPro
   ClassName: TMPro.TMP_GlyphValueRecord
 - AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.TMP_InputField/OnChangeEvent
+- AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.TMP_InputField/SelectionEvent
+- AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.TMP_InputField/SubmitEvent
+- AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.TMP_InputField/TextSelectionEvent
+- AssemblyName: Unity.TextMeshPro
+  ClassName: TMPro.TMP_InputField/TouchScreenKeyboardEvent
+- AssemblyName: Unity.TextMeshPro
   ClassName: TMPro.VertexGradient
 - AssemblyName: UnityEngine.CoreModule
   ClassName: UnityEngine.Events.PersistentCallGroup
@@ -122,5 +140,6 @@ Assets:
 - Assets/Art/UIPrefab/DepthLabelPanel.prefab
 Dependencies:
 - E:/Practice/Unity/Demo/DUT/DepthLabelTool/AssetBundles/Windows/infoitembtn_prefab
+- E:/Practice/Unity/Demo/DUT/DepthLabelTool/AssetBundles/Windows/inputpanel_prefab
 - E:/Practice/Unity/Demo/DUT/DepthLabelTool/AssetBundles/Windows/labelitem_prefab
 - E:/Practice/Unity/Demo/DUT/DepthLabelTool/AssetBundles/Windows/showresultitem_prefab

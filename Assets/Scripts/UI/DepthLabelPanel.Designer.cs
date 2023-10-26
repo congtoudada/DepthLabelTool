@@ -5,13 +5,17 @@ using QFramework;
 
 namespace GJFramework
 {
-	// Generate Id:1c5135b0-c600-4eee-af5c-050b80f3a0e1
+	// Generate Id:f4332692-897c-4870-9d0d-fbae841822e4
 	public partial class DepthLabelPanel
 	{
 		public const string Name = "DepthLabelPanel";
 		
 		[SerializeField]
+		public UnityEngine.UI.Button ExitButton;
+		[SerializeField]
 		public TMPro.TextMeshProUGUI DirtyTip;
+		[SerializeField]
+		public TMPro.TMP_Dropdown PageDropdown;
 		[SerializeField]
 		public UnityEngine.UI.Button LockBtn;
 		[SerializeField]
@@ -31,6 +35,8 @@ namespace GJFramework
 		[SerializeField]
 		public TMPro.TMP_Dropdown TypeDropdown;
 		[SerializeField]
+		public RectTransform RightVerticalLayout;
+		[SerializeField]
 		public UnityEngine.UI.ScrollRect LabelScrollView;
 		[SerializeField]
 		public UnityEngine.UI.ScrollRect InfoScrollView;
@@ -39,7 +45,7 @@ namespace GJFramework
 		[SerializeField]
 		public UnityEngine.UI.Button NextBtn;
 		[SerializeField]
-		public UnityEngine.UI.Button ExitButton;
+		public InputPanel InputPanel;
 		[SerializeField]
 		public UnityEngine.UI.Image GrayBG;
 		[SerializeField]
@@ -51,7 +57,9 @@ namespace GJFramework
 		
 		protected override void ClearUIComponents()
 		{
+			ExitButton = null;
 			DirtyTip = null;
+			PageDropdown = null;
 			LockBtn = null;
 			LockText = null;
 			AnnoBtn = null;
@@ -61,11 +69,12 @@ namespace GJFramework
 			SaveDirBtn = null;
 			SaveDirText = null;
 			TypeDropdown = null;
+			RightVerticalLayout = null;
 			LabelScrollView = null;
 			InfoScrollView = null;
 			BackBtn = null;
 			NextBtn = null;
-			ExitButton = null;
+			InputPanel = null;
 			GrayBG = null;
 			MainImg = null;
 			Results = null;

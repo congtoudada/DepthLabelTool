@@ -9,6 +9,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.UI;
 
 namespace GJFramework
 {
@@ -22,7 +24,31 @@ namespace GJFramework
         private IEnumerator Start()
         {
             yield return new WaitForSeconds(1);
-            ConvertToPNG();
+            // ConvertToPNG();
+            LoadPNG(@"E:\Practice\Unity\资料\DUT\label_toolkit_demo\1020\parking_plot\20231020160928\vis\00001_left.png");
+        }
+
+        void LoadPNG(string path)
+        {
+            StartCoroutine(LoadTexture2D(path));
+        }
+        
+        public IEnumerator LoadTexture2D(string path)
+        {
+            UnityWebRequest request = UnityWebRequestTexture.GetTexture(path);
+            yield return request.SendWebRequest();
+
+            if (request.isHttpError || request.isNetworkError)
+            {  }
+            else
+            {
+                // 这个是物体身上的组件Image
+                Image img = GetComponent<Image>();
+
+                var texture = DownloadHandlerTexture.GetContent(request);
+                Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+                img.sprite = sprite;
+            }
         }
 
         // Update is called once per frame

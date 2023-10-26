@@ -44,6 +44,7 @@ namespace GJFramework
 		private IActionController _tipController;
 		public ResLoader ResLoader => mResLoader;
 		private ResLoader mResLoader = ResLoader.Allocate();
+		public Transform InfoContent => _infoContent;
 		private Transform _infoContent;
 		public Transform LabelContent => _labelContent;
 		private Transform _labelContent;
@@ -93,6 +94,7 @@ namespace GJFramework
 			TypeDropdown.onValueChanged.AddListener(idx =>
 			{
 				currentTypeIdx = idx;
+				InputPanel.SetCls(idx);
 			});
 			
 			//上一张
@@ -124,9 +126,45 @@ namespace GJFramework
 			};
 			ActionKit.OnUpdate.Register(() =>
 			{
-				if (isLock && Input.GetKeyDown(KeyCode.W))
+				if (isLock && Input.GetKeyDown(KeyCode.W) && PageDropdown.value == 0)
 				{
+					if (_labelContent.childCount >= 1)
+					{
+						SetTip("只能标定1个包围盒！", 2.0f);
+						return;
+					}
 					this.SendCommand(new LabelActionCommand(this));
+				}
+			});
+			
+			//翻页开关
+			PageDropdown.onValueChanged.AddListener(v =>
+			{
+				if (v == 0) // -> 2D Page
+				{
+					RightVerticalLayout.gameObject.SetActive(true);
+					InputPanel.gameObject.SetActive(false);
+					string filename = _infoContent.GetChild(currentBMPIdx).name.Split('@')[1];
+					Results.gameObject.SetActive(true);
+					ShowBMP(Path.Combine(mModel.DataDir.Value, "images", filename));
+				}
+				else  //-> 3D Page
+				{
+					string bmpFilename = _infoContent.GetChild(currentBMPIdx).name.Split('@')[1];
+					if (_labelContent.childCount > 0)
+					{
+						LabelResult labelResult = _labelContent.GetChild(0).GetComponent<LabelResult>();
+						InputPanel.Init(this, bmpFilename, TypeDropdown.value, 
+							(int) labelResult.left_up[0], (int) labelResult.left_up[1],
+							(int) labelResult.right_bottom[0], (int) labelResult.right_bottom[1]);
+					}
+					else
+					{
+						InputPanel.Init(this, bmpFilename, TypeDropdown.value);
+					}
+					Results.gameObject.SetActive(false);
+					RightVerticalLayout.gameObject.SetActive(false);
+					InputPanel.gameObject.SetActive(true);
 				}
 			});
 			
@@ -192,7 +230,7 @@ namespace GJFramework
 			}
 
 			yield return null;
-			string dataDir = mModel.DataDir.Value;
+			string dataDir = Path.Combine(mModel.DataDir.Value, "images");
 			if (dataDir.IsNotNullAndEmpty())
 			{
 				//添加新节点
@@ -234,9 +272,8 @@ namespace GJFramework
 			currentBMPIdx = data[0].ToInt();
 			_infoContent.GetChild(currentBMPIdx).GetComponent<Image>().color = infoColor;
 			//显示BMP
-			string path = Path.Combine(mModel.DataDir.Value, data[1]);
-			Texture2D texture2D = BMPLoader.LoadTexture(path);
-			MainImg.sprite = Sprite.Create(texture2D, new Rect(0, 0, texture2D.width, texture2D.height), Vector2.one * 0.5f);
+			string path = Path.Combine(mModel.DataDir.Value, "images", data[1]);
+			ShowBMP(path);
 			
 			//更新LabelResult
 			StartCoroutine(UpdateLabelResult(old_name.Split('@')[1], data[1]));
@@ -247,6 +284,13 @@ namespace GJFramework
 			// Debug.Log(_infoContent.GetChild(idx).name);
 			SwitchInfoItem(_infoContent.GetChild(oldIdx).name ,_infoContent.GetChild(idx).name);
 		}
+
+		private void ShowBMP(string path)
+		{
+			//显示BMP
+			Texture2D texture2D = BMPLoader.LoadTexture(path);
+			MainImg.sprite = Sprite.Create(texture2D, new Rect(0, 0, texture2D.width, texture2D.height), Vector2.one * 0.5f);
+		}
 		
 		// 更新结果列表
 		//  old_filename: 切换前图片文件名
@@ -256,43 +300,43 @@ namespace GJFramework
 			if (_labelContent.childCount > 0)
 			{
 				//存储
-				string save_jsonName = old_filename.GetFileNameWithoutExtend() + ".json";
-				string save_jsonPath = Path.Combine(mModel.SaveDir.Value, save_jsonName);
-
-				_labelResultJson.Init(old_filename, mModel.AnnoPath.Value.GetFileName(), this._typeFloatInfoList);
-				LabelResult[] labelResults = _labelContent.GetComponentsInChildren<LabelResult>();
-				foreach (LabelResult result in labelResults)
-				{
-					LabelResultJsonItem jsonItem = _jsonPool.Allocate();
-					jsonItem.Init(result.typeIndex, (int) result.left_up[0], (int) result.left_up[1], 
-						(int) result.right_bottom[0], (int) result.right_bottom[1]);
-					_labelResultJson.resultList.Add(jsonItem);
-				}
-				
-				//根据是否变化判断写入本地
-				LabelResultJson localJsonObj = null;
-				if (File.Exists(save_jsonPath))
-				{
-					localJsonObj = JsonUtility.FromJson<LabelResultJson>(File.ReadAllText(save_jsonPath));
-				}
-
-				if (localJsonObj == null || !localJsonObj.Equals(_labelResultJson))
-				{
-					string jsonString = JsonUtility.ToJson(_labelResultJson, true);
-					using (StreamWriter sw = new StreamWriter(save_jsonPath))  
-					{  
-						sw.Write(jsonString);
-					}
-					//导出png
-					this.SendCommand(new ExportDepthPNGCommand(this, _labelResultJson));
-				}
-
-				//回收
-				foreach (var jsonItem in _labelResultJson.resultList)
-				{
-					_jsonPool.Recycle(jsonItem);
-				}
-				_labelResultJson.resultList.Clear();
+				// string save_jsonName = old_filename.GetFileNameWithoutExtend() + ".json";
+				// string save_jsonPath = Path.Combine(mModel.SaveDir.Value, save_jsonName);
+				//
+				// _labelResultJson.Init(old_filename, mModel.AnnoPath.Value.GetFileName(), this._typeFloatInfoList);
+				// LabelResult[] labelResults = _labelContent.GetComponentsInChildren<LabelResult>();
+				// foreach (LabelResult result in labelResults)
+				// {
+				// 	LabelResultJsonItem jsonItem = _jsonPool.Allocate();
+				// 	jsonItem.Init(result.typeIndex, (int) result.left_up[0], (int) result.left_up[1], 
+				// 		(int) result.right_bottom[0], (int) result.right_bottom[1]);
+				// 	_labelResultJson.resultList.Add(jsonItem);
+				// }
+				//
+				// //根据是否变化判断写入本地
+				// LabelResultJson localJsonObj = null;
+				// if (File.Exists(save_jsonPath))
+				// {
+				// 	localJsonObj = JsonUtility.FromJson<LabelResultJson>(File.ReadAllText(save_jsonPath));
+				// }
+				//
+				// if (localJsonObj == null || !localJsonObj.Equals(_labelResultJson))
+				// {
+				// 	string jsonString = JsonUtility.ToJson(_labelResultJson, true);
+				// 	using (StreamWriter sw = new StreamWriter(save_jsonPath))  
+				// 	{  
+				// 		sw.Write(jsonString);
+				// 	}
+				// 	//导出png
+				// 	this.SendCommand(new ExportDepthPNGCommand(this, _labelResultJson));
+				// }
+				//
+				// //回收
+				// foreach (var jsonItem in _labelResultJson.resultList)
+				// {
+				// 	_jsonPool.Recycle(jsonItem);
+				// }
+				// _labelResultJson.resultList.Clear();
 
 				//删除旧节点
 				LabelResult[] children = _labelContent.GetComponentsInChildren<LabelResult>();
@@ -303,66 +347,79 @@ namespace GJFramework
 				}
 				yield return null;
 			}
+			
 			//尝试载入本地Annotation
-			string loadJsonName = filename.GetFileNameWithoutExtend() + ".json";
-			string loadJsonPath = Path.Combine(mModel.SaveDir.Value, loadJsonName);
-			if (File.Exists(loadJsonPath))
-			{
-				_labelResultJson = JsonUtility.FromJson<LabelResultJson>(File.ReadAllText(loadJsonPath));
-				foreach (var item in _labelResultJson.resultList)
-				{
-					Color labelColor = Color.black;
-					_labelColorDict.TryGetValue(item.typeIdx, out labelColor);
-					this.SendCommand(new AddLabelItemCommand(this, item.typeIdx, TypeDropdown.options[item.typeIdx].text,
-						new Vector2(item.lt_x, item.lt_y), new Vector2(item.rb_x, item.rb_y),
-						labelColor));
-				}
-			}
+			// string loadJsonName = filename.GetFileNameWithoutExtend() + ".json";
+			// string loadJsonPath = Path.Combine(mModel.SaveDir.Value, loadJsonName);
+			// if (File.Exists(loadJsonPath))
+			// {
+			// 	// _labelResultJson = JsonUtility.FromJson<LabelResultJson>(File.ReadAllText(loadJsonPath));
+			// 	foreach (var item in _labelResultJson.resultList)
+			// 	{
+			// 		Color labelColor = Color.black;
+			// 		_labelColorDict.TryGetValue(item.typeIdx, out labelColor);
+			// 		this.SendCommand(new AddLabelItemCommand(this, item.typeIdx, TypeDropdown.options[item.typeIdx].text,
+			// 			new Vector2(item.lt_x, item.lt_y), new Vector2(item.rb_x, item.rb_y),
+			// 			labelColor));
+			// 	}
+			// }
 		}
 
 		//更新TypeDropDown
 		private void UpdateView_TypeDropDown()
 		{
-			// 类型选择
-			TypeDropdown.options.Clear();
-			_typeInfoList.Clear();
-			_typeFloatInfoList.Clear();
-			// TypeDropdown.options.Add(new TMP_Dropdown.OptionData("空类别"));
-			if (mModel.AnnoPath.Value.IsNotNullAndEmpty())
+			if (TypeDropdown.options.Count > 0)
 			{
-				// TypeDropdown.options.Add(new TMP_Dropdown.OptionData(""));
-				using StreamReader sr = new StreamReader(mModel.AnnoPath.Value);
-				string line =  sr.ReadLine();
-				while (line != null)
+				for (int i = 0; i < TypeDropdown.options.Count; i++)
 				{
-					TypeDropdown.options.Add(new TMP_Dropdown.OptionData(line));
-					_typeInfoList.Add(line);
-					line = sr.ReadLine();
+					_labelColorDict.Add(i, new Color(Random.value, Random.value, Random.value, 186.0f / 255.0f));
 				}
-				for (int i = 0; i < _typeInfoList.Count; i++)
-				{
-					Match match = Regex.Match(_typeInfoList[i], pattern);  
-          
-					if (match.Success)  
-					{  
-						_typeFloatInfoList.Add(match.Value);
-					}  
-				}
-
-				if (TypeDropdown.options.Count > 0)
-				{
-					_labelColorDict.Clear();
-					TypeDropdown.value = 0;
-					for (int i = 0; i < TypeDropdown.options.Count; i++)
-					{
-						_labelColorDict.Add(i, new Color(Random.value, Random.value, Random.value, 186.0f / 255.0f));
-					}
 					
-					currentTypeIdx = 0;
-					TypeDropdown.value = 0;
-					TypeDropdown.RefreshShownValue();
-				}
+				currentTypeIdx = 0;
+				TypeDropdown.value = 0;
+				TypeDropdown.RefreshShownValue();
 			}
+			
+			// // 类型选择
+			// TypeDropdown.options.Clear();
+			// _typeInfoList.Clear();
+			// _typeFloatInfoList.Clear();
+			// // TypeDropdown.options.Add(new TMP_Dropdown.OptionData("空类别"));
+			// if (mModel.AnnoPath.Value.IsNotNullAndEmpty())
+			// {
+			// 	// TypeDropdown.options.Add(new TMP_Dropdown.OptionData(""));
+			// 	using StreamReader sr = new StreamReader(mModel.AnnoPath.Value);
+			// 	string line =  sr.ReadLine();
+			// 	while (line != null)
+			// 	{
+			// 		TypeDropdown.options.Add(new TMP_Dropdown.OptionData(line));
+			// 		_typeInfoList.Add(line);
+			// 		line = sr.ReadLine();
+			// 	}
+			// 	for (int i = 0; i < _typeInfoList.Count; i++)
+			// 	{
+			// 		Match match = Regex.Match(_typeInfoList[i], pattern);  
+   //        
+			// 		if (match.Success)  
+			// 		{  
+			// 			_typeFloatInfoList.Add(match.Value);
+			// 		}  
+			// 	}
+			//
+			// 	if (TypeDropdown.options.Count > 0)
+			// 	{
+			// 		_labelColorDict.Clear();
+			// 		TypeDropdown.value = 0;
+			// 		for (int i = 0; i < TypeDropdown.options.Count; i++)
+			// 		{
+			// 			_labelColorDict.Add(i, new Color(Random.value, Random.value, Random.value, 186.0f / 255.0f));
+			// 		}
+			// 		
+			// 		currentTypeIdx = 0;
+			// 		TypeDropdown.value = 0;
+			// 		TypeDropdown.RefreshShownValue();
+			// 	}
+			// }
 		}
 
 		public void SwitchLock()
@@ -377,6 +434,8 @@ namespace GJFramework
 				SaveDirBtn.interactable = true;
 				BackBtn.interactable = false;
 				NextBtn.interactable = false;
+				PageDropdown.interactable = false;
+				TypeDropdown.interactable = false;
 				//清屏
 				UpdateView(DepthLabelPanelViewEnum.Clear);
 			}
@@ -390,6 +449,8 @@ namespace GJFramework
 				SaveDirBtn.interactable = false;
 				BackBtn.interactable = true;
 				NextBtn.interactable = true;
+				PageDropdown.interactable = true;
+				TypeDropdown.interactable = true;
 				//更新屏幕信息
 				UpdateView(DepthLabelPanelViewEnum.All);
 			}
@@ -397,7 +458,7 @@ namespace GJFramework
 
 		private void ClearView()
 		{
-			TypeDropdown.options.Clear();
+			// TypeDropdown.options.Clear();
 			TypeDropdown.RefreshShownValue();
 			if (_infoContent.childCount > 0)
 			{
